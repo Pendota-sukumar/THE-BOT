@@ -1,36 +1,28 @@
 import streamlit as st
-from bot_engine import create_exchange, fetch_data, decide_strategy, execute_trade
+from bot_engine import get_account_balance
 
-st.set_page_config(page_title="🤖 AI Crypto Trading Bot", layout="centered")
-st.title("💸 AI Crypto Trading Bot with CoinDCX")
+st.title("💰 CoinDCX Crypto Bot Dashboard")
 
-# Section: API Keys
-st.header("🔐 API Configuration")
-api_key = st.text_input("Enter CoinDCX API Key", type="password")
-api_secret = st.text_input("Enter CoinDCX API Secret", type="password")
+st.header("🔍 Your Account Balance")
 
-# Proceed if keys are provided
-if api_key and api_secret:
-    try:
-        exchange = create_exchange(api_key, api_secret)
-        st.success("✅ API connected successfully!")
+balances = get_account_balance()
 
-        st.header("⚙️ Trading Settings")
-        symbol = st.selectbox("Select Crypto Pair", ["BTC/INR", "ETH/INR", "DOGE/INR"])
-        strategy = st.radio("Choose Strategy", ["1", "2", "3"])
-
-        if st.button("▶️ Start Trading Bot"):
-            with st.spinner("Analyzing market..."):
-                price, high, low = fetch_data(exchange, symbol)
-                decision = decide_strategy(strategy, price, high, low)
-                result = execute_trade(exchange, symbol, decision)
-
-                st.subheader("📊 Bot Decision Summary")
-                st.metric("Current Price", f"₹{price}")
-                st.write(f"**Strategy {strategy} Decision:** `{decision.upper()}`")
-                st.success(f"🔁 Action Taken: {result}")
-
-    except Exception as e:
-        st.error(f"❌ Connection failed: {e}")
+if balances:
+    for item in balances:
+        coin = item["currency"]
+        bal = item["balance"]
+        st.write(f"**{coin}**: {bal}")
 else:
-    st.warning("Please enter your API credentials to continue.")
+    st.error("Failed to fetch balances.")
+
+st.header("🧠 Choose Trading Strategy")
+
+strategy = st.selectbox("Select your trading strategy:", [
+    "Strategy 1: Buy Low, Sell High",
+    "Strategy 2: Momentum Trading",
+    "Strategy 3: RSI-Based Trading"
+])
+
+if st.button("🚀 Start Bot"):
+    st.success(f"Bot started with {strategy}")
+    # You can call your bot logic here (we'll add this in the next step)
