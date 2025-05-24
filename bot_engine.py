@@ -1,29 +1,26 @@
-import ccxt
+import os
+import time
+import hmac
+import hashlib
+import requests
+from dotenv import load_dotenv
 
-def create_exchange(api_key, api_secret):
-    return ccxt.coindcx({
-        'apiKey': api_key,
-        'secret': api_secret
-    })
+# Load API keys from .env
+load_dotenv()
+API_KEY = os.getenv("API_KEY")
+API_SECRET = os.getenv("API_SECRET")
 
-def fetch_data(exchange, symbol):
-    ticker = exchange.fetch_ticker(symbol)
-    return ticker['last'], ticker['high'], ticker['low']
-
-def decide_strategy(strategy, price, high, low):
-    if strategy == "1":
-        return 'buy' if price < low + (high - low) * 0.3 else 'hold'
-    elif strategy == "2":
-        return 'sell' if price > low + (high - low) * 0.7 else 'hold'
-    elif strategy == "3":
-        return 'buy' if price < (high + low) / 2 else 'sell'
-    else:
-        return 'hold'
-
-def execute_trade(exchange, symbol, action):
-    if action == 'buy':
-        return "Simulated BUY order executed."
-    elif action == 'sell':
-        return "Simulated SELL order executed."
-    else:
-        return "No action taken."
+def get_headers(payload: dict):
+    payload_str = str(payload).replace("'", '"')  # Convert dict to JSON string
+    signature = hmac.new(
+        bytes(API_SECRET, 'utf-8'),
+        msg=bytes(payload_str, 'utf-8'),
+        digestmod=hashlib.sha256
+    ).hexdigest()
+    
+    headers = {
+        'Content-Type': 'application/json',
+        'X-AUTH-APIKEY': API_KEY,
+        'X-AUTH-SIGNATURE': signature
+    }
+    return headers, payload_str
