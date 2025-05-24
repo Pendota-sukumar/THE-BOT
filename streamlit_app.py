@@ -1,23 +1,37 @@
 import streamlit as st
-from bot_engine import get_account_balance, execute_strategy
+from bot_engine import get_account_balance, execute_strategy, get_current_price
 
-st.title("THE-BOT: CoinDCX Crypto Bot Dashboard")
+st.set_page_config(page_title="CoinDCX Crypto Bot", layout="centered")
 
-st.header("Your Account Balance")
+st.title("🤖 CoinDCX Crypto Bot Dashboard")
+
+st.header("📊 Your Account Balance")
+
 balances = get_account_balance()
+
 if balances:
     for item in balances:
-        st.write(f"**{item['currency']}**: {item['balance']}")
+        coin = item["currency"]
+        bal = item["balance"]
+        st.write(f"**{coin}**: {bal}")
 else:
-    st.error("Failed to fetch balances.")
+    st.error("❌ Failed to fetch balances.")
 
-st.header("Choose Trading Strategy")
+st.header("📈 Current BTC Price")
+price = get_current_price("BTC/INR")
+if price:
+    st.success(f"Current BTC/INR Price: ₹{price}")
+else:
+    st.error("❌ Failed to fetch BTC price.")
+
+st.header("⚙️ Choose Trading Strategy")
+
 strategy = st.selectbox("Select your trading strategy:", [
     "Strategy 1: Buy Low, Sell High",
     "Strategy 2: Momentum Trading",
     "Strategy 3: RSI-Based Trading"
 ])
 
-if st.button("Start Bot"):
+if st.button("🚀 Start Bot"):
     result = execute_strategy(strategy)
     st.success(result)
