@@ -6,9 +6,14 @@ import requests
 from dotenv import load_dotenv
 
 # Load API keys from .env
+
 load_dotenv()
+
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
+
+print("Loaded API Key:", API_KEY is not None)
+print("Loaded API Secret:", API_SECRET is not None)
 
 def get_headers(payload: dict):
     payload_str = str(payload).replace("'", '"')  # Convert dict to JSON string
