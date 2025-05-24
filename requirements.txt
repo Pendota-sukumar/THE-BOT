@@ -1,3 +1,4 @@
 streamlit
-ccxt
-
+requests
+python-dotenv
+pandas
