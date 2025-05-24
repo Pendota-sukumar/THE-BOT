@@ -147,7 +147,7 @@ def get_market_data(symbol="BTCINR"):
 
 # ✅ 4. Strategy 1 - Real-time example
 def run_strategy_1():
-    data = get_market_data("BTCINR")
+    data = get_market_data("btcinr")
     if not data:
         return "Failed to fetch BTC market data."
 
@@ -155,12 +155,43 @@ def run_strategy_1():
     low = float(data['low'])
     high = float(data['high'])
 
+    balances = get_account_balance()
+    inr_balance = 0.0
+    for asset in balances:
+        if asset['currency'].lower() == 'inr':
+            inr_balance = float(asset['balance'])
+            break
+
+    if inr_balance < 10:  # minimum to trade (adjust as per CoinDCX)
+        return "Insufficient INR balance to trade."
+
+    quantity = get_max_quantity(price, inr_balance)
+    if quantity < 0.00001:
+        return "Calculated quantity too low to trade."
+
+    # Buy if price near day low (within 1%)
     if price <= low * 1.01:
-        return f"🔽 BTC Price: ₹{price} is near day’s low ({low}). Consider buying."
+        order_response = place_order(
+            side="buy",
+            market="btcinr",
+            quantity=quantity,
+            order_type="market"
+        )
+        return f"🔽 Buying BTC: {order_response}"
+
+    # Sell if price near day high (within 1%)
     elif price >= high * 0.99:
-        return f"🔼 BTC Price: ₹{price} is near day’s high ({high}). Consider selling."
+        order_response = place_order(
+            side="sell",
+            market="btcinr",
+            quantity=quantity,
+            order_type="market"
+        )
+        return f"🔼 Selling BTC: {order_response}"
+
     else:
         return f"ℹ️ BTC Price: ₹{price} - No action triggered."
+
 
 # ✅ 5. Dummy strategies (can be upgraded later)
 def run_strategy_2():
