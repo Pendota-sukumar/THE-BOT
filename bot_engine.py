@@ -24,3 +24,21 @@ def get_headers(payload: dict):
         'X-AUTH-SIGNATURE': signature
     }
     return headers, payload_str
+
+
+def get_account_balance():
+    url = "https://api.coindcx.com/exchange/v1/users/balances"
+    payload = {}
+    headers, payload_str = get_headers(payload)
+
+    response = requests.post(url, data=payload_str, headers=headers)
+    
+    if response.status_code == 200:
+        data = response.json()
+        # Filter only coins with non-zero balance
+        non_zero = [item for item in data if float(item["balance"]) > 0]
+        return non_zero
+    else:
+        print("Error:", response.text)
+        return []
+
