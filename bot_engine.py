@@ -25,6 +25,38 @@ def get_headers(payload: dict):
     }
     return headers, payload_str
 
+def place_order(side, market="btcinr", quantity=0.001, price=None, order_type="limit"):
+    """
+    Place an order on CoinDCX.
+    side: "buy" or "sell"
+    market: trading pair like "btcinr"
+    quantity: amount of coin to buy/sell
+    price: limit price, if order_type is limit
+    order_type: "limit" or "market"
+    """
+    url = "https://api.coindcx.com/exchange/v1/orders"
+    order = {
+        "side": side,
+        "market": market,
+        "order_type": order_type,
+        "price": str(price) if price else None,
+        "quantity": str(quantity),
+        "recv_window": 5000,
+        "timestamp": int(time.time() * 1000)
+    }
+
+    # Remove price if market order
+    if order_type == "market":
+        order.pop("price", None)
+
+    headers, payload_str = get_headers(order)
+
+    response = requests.post(url, data=payload_str, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": response.text}
+
 
 def get_account_balance():
     url = "https://api.coindcx.com/exchange/v1/users/balances"
