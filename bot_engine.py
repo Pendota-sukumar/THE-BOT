@@ -7,6 +7,12 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
 
+import streamlit as st
+
+API_KEY = st.secrets["coindcx"]["api_key"]
+API_SECRET = st.secrets["coindcx"]["api_secret"]
+
+
 exchange = ccxt.coindcx({
     'apiKey': API_KEY,
     'secret': API_SECRET,
