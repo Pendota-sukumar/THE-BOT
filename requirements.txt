@@ -1,5 +1,4 @@
 ccxt
-ccxt==2.8.87
 streamlit
 requests
 python-dotenv
