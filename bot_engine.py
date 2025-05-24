@@ -1,211 +1,41 @@
 import os
-import time
-import hmac
-import hashlib
-import requests
+import ccxt
 from dotenv import load_dotenv
-
-# Load API keys from .env
 
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
 
-print("Loaded API Key:", API_KEY is not None)
-print("Loaded API Secret:", API_SECRET is not None)
-
-def get_headers(payload: dict):
-    payload_str = str(payload).replace("'", '"')  # Convert dict to JSON string
-    signature = hmac.new(
-        bytes(API_SECRET, 'utf-8'),
-        msg=bytes(payload_str, 'utf-8'),
-        digestmod=hashlib.sha256
-    ).hexdigest()
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'X-AUTH-APIKEY': API_KEY,
-        'X-AUTH-SIGNATURE': signature
-    }
-    return headers, payload_str
-
-def place_order(side, market="btcinr", quantity=0.001, price=None, order_type="limit"):
-    """
-    Place an order on CoinDCX.
-    side: "buy" or "sell"
-    market: trading pair like "btcinr"
-    quantity: amount of coin to buy/sell
-    price: limit price, if order_type is limit
-    order_type: "limit" or "market"
-    """
-    url = "https://api.coindcx.com/exchange/v1/orders"
-    order = {
-        "side": side,
-        "market": market,
-        "order_type": order_type,
-        "price": str(price) if price else None,
-        "quantity": str(quantity),
-        "recv_window": 5000,
-        "timestamp": int(time.time() * 1000)
-    }
-
-    # Remove price if market order
-    if order_type == "market":
-        order.pop("price", None)
-
-    headers, payload_str = get_headers(order)
-
-    response = requests.post(url, data=payload_str, headers=headers)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": response.text}
-
+exchange = ccxt.coindcx({
+    'apiKey': API_KEY,
+    'secret': API_SECRET,
+    'enableRateLimit': True,
+})
 
 def get_account_balance():
-    url = "https://api.coindcx.com/exchange/v1/users/balances"
-    payload = {}
-    headers, payload_str = get_headers(payload)
-
-    response = requests.post(url, data=payload_str, headers=headers)
-    
-    if response.status_code == 200:
-        data = response.json()
-        # Filter only coins with non-zero balance
-        non_zero = [item for item in data if float(item["balance"]) > 0]
-        return non_zero
-    else:
-        print("Error:", response.text)
-        return []
-
-def get_market_data(symbol="BTCINR"):
-    """
-    Fetch real-time ticker data from CoinDCX for the given symbol.
-    """
-    url = f"https://public.coindcx.com/market_data/ticker"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        data = response.json()
-        # Filter for the specific trading pair (like BTCINR)
-        filtered = [item for item in data if item["market"] == symbol]
-        return filtered[0] if filtered else None
-    else:
-        print("Failed to fetch market data:", response.text)
+    try:
+        balance = exchange.fetch_balance()
+        # return list of currencies and balances
+        balances = []
+        for currency, info in balance['total'].items():
+            if info > 0:
+                balances.append({"currency": currency, "balance": info})
+        return balances
+    except Exception as e:
+        print("Error fetching balances:", e)
         return None
 
-
-import requests
-import time
-import hmac
-import hashlib
-import json
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-API_KEY = os.getenv("API_KEY")
-API_SECRET = os.getenv("API_SECRET")
-
-# ✅ 1. Authentication headers function
-def get_headers(payload):
-    payload_str = json.dumps(payload, separators=(',', ':'))
-    signature = hmac.new(
-        API_SECRET.encode(), payload_str.encode(), hashlib.sha256
-    ).hexdigest()
-
-    headers = {
-        'Content-Type': 'application/json',
-        'X-AUTH-APIKEY': API_KEY,
-        'X-AUTH-SIGNATURE': signature
-    }
-    return headers, payload_str
-
-# ✅ 2. Balance fetch function
-def get_account_balance():
-    url = "https://api.coindcx.com/exchange/v1/users/balances"
-    payload = {}
-    headers, payload_str = get_headers(payload)
-
-    response = requests.post(url, data=payload_str, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        non_zero = [item for item in data if float(item["balance"]) > 0]
-        return non_zero
-    else:
-        print("Error:", response.text)
-        return []
-
-# ✅ 3. Market data fetch function
-def get_market_data(symbol="BTCINR"):
-    url = f"https://public.coindcx.com/market_data/ticker"
-    response = requests.get(url)
-
-    if response.status_code == 200:
-        data = response.json()
-        filtered = [item for item in data if item["market"] == symbol]
-        return filtered[0] if filtered else None
-    else:
-        print("Failed to fetch market data:", response.text)
-        return None
-
-# ✅ 4. Strategy 1 - Real-time example
+# Strategy examples (mocked)
 def run_strategy_1():
-    data = get_market_data("btcinr")
-    if not data:
-        return "Failed to fetch BTC market data."
+    return "Executed Strategy 1: Buy Low, Sell High"
 
-    price = float(data['last_price'])
-    low = float(data['low'])
-    high = float(data['high'])
-
-    balances = get_account_balance()
-    inr_balance = 0.0
-    for asset in balances:
-        if asset['currency'].lower() == 'inr':
-            inr_balance = float(asset['balance'])
-            break
-
-    if inr_balance < 10:  # minimum to trade (adjust as per CoinDCX)
-        return "Insufficient INR balance to trade."
-
-    quantity = get_max_quantity(price, inr_balance)
-    if quantity < 0.00001:
-        return "Calculated quantity too low to trade."
-
-    # Buy if price near day low (within 1%)
-    if price <= low * 1.01:
-        order_response = place_order(
-            side="buy",
-            market="btcinr",
-            quantity=quantity,
-            order_type="market"
-        )
-        return f"🔽 Buying BTC: {order_response}"
-
-    # Sell if price near day high (within 1%)
-    elif price >= high * 0.99:
-        order_response = place_order(
-            side="sell",
-            market="btcinr",
-            quantity=quantity,
-            order_type="market"
-        )
-        return f"🔼 Selling BTC: {order_response}"
-
-    else:
-        return f"ℹ️ BTC Price: ₹{price} - No action triggered."
-
-
-# ✅ 5. Dummy strategies (can be upgraded later)
 def run_strategy_2():
     return "Executed Strategy 2: Momentum Trading"
 
 def run_strategy_3():
     return "Executed Strategy 3: RSI-Based Trading"
 
-# ✅ 6. Selector
 def execute_strategy(name: str):
     if "1" in name:
         return run_strategy_1()
@@ -215,3 +45,8 @@ def execute_strategy(name: str):
         return run_strategy_3()
     else:
         return "Invalid Strategy"
+
+if __name__ == "__main__":
+    print("API_KEY loaded:", API_KEY is not None)
+    print("API_SECRET loaded:", API_SECRET is not None)
+    print("Balances:", get_account_balance())
