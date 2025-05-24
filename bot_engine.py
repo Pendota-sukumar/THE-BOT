@@ -10,6 +10,11 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
 
+exchange = ccxt.coindcx({
+    'apiKey': API_KEY,
+    'secret': API_SECRET,
+})
+
 def get_headers(payload: dict):
     payload_str = str(payload).replace("'", '"')  # Convert dict to JSON string
     signature = hmac.new(
