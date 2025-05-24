@@ -42,3 +42,19 @@ def get_account_balance():
         print("Error:", response.text)
         return []
 
+def get_market_data(symbol="BTCINR"):
+    """
+    Fetch real-time ticker data from CoinDCX for the given symbol.
+    """
+    url = f"https://public.coindcx.com/market_data/ticker"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        # Filter for the specific trading pair (like BTCINR)
+        filtered = [item for item in data if item["market"] == symbol]
+        return filtered[0] if filtered else None
+    else:
+        print("Failed to fetch market data:", response.text)
+        return None
+
